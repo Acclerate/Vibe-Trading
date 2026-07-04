@@ -1152,7 +1152,24 @@ def main(run_dir: Path) -> None:
     # import ``signal_engine.py`` from anywhere on disk; the AST scrubber
     # below blocks executable top-level statements but a method body still
     # runs on instantiation. See ``safe_run_dir`` for the policy.
-    from src.tools.path_utils import safe_run_dir
+    #
+    # NB: load ``path_utils`` directly from its file via importlib rather than
+    # ``from src.tools.path_utils import safe_run_dir``. The latter executes
+    # ``src/tools/__init__.py``, which pulls in the full agent stack
+    # (src.agent -> langchain -> transformers -> torch). In environments where
+    # torch's native libs fail to initialise (e.g. a corrupted c10.dll on
+    # Windows Anaconda), that import chain crashes the backtest *subprocess*
+    # before a single bar is fetched — surfacing upstream as a misleading
+    # "A-share data-source limitation". ``path_utils`` itself only depends on
+    # ``os``/``pathlib`` plus ``src.swarm.store`` (lightweight), so a direct
+    # file load keeps the runner dependency-light and side-effect-free.
+    _pa_spec = importlib.util.spec_from_file_location(
+        "_runner_path_utils",
+        Path(__file__).resolve().parent.parent / "src" / "tools" / "path_utils.py",
+    )
+    _pa_mod = importlib.util.module_from_spec(_pa_spec)
+    _pa_spec.loader.exec_module(_pa_mod)
+    safe_run_dir = _pa_mod.safe_run_dir
     try:
         run_dir = safe_run_dir(str(run_dir))
     except ValueError as exc:

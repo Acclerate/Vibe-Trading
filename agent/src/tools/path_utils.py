@@ -116,7 +116,26 @@ def _default_file_roots() -> list[Path]:
 def _default_run_roots() -> list[Path]:
     """Return default roots for generated backtest/tool run directories."""
     from src.config.paths import get_runtime_root
-    from src.swarm.store import swarm_runs_root
+
+    # Resolve ``swarm_runs_root`` without importing ``src.swarm.store`` the
+    # normal way: that module's package ``__init__`` and its own
+    # ``from src.tools.redaction import ...`` pull in the full agent/langchain/
+    # torch stack, which can crash the backtest subprocess on environments
+    # where torch's native libs fail to initialise (see runner.py main()).
+    # ``swarm_runs_root()`` is a pure ``<agent_root>/.swarm/runs`` helper with
+    # no dependencies, so loading just that file keeps this path side-effect
+    # free. Falls back to the in-tree equivalent if the file load fails.
+    try:
+        import importlib.util
+
+        _store_path = _agent_root() / "src" / "swarm" / "store.py"
+        _spec = importlib.util.spec_from_file_location("_swarm_store_lazy", _store_path)
+        _mod = importlib.util.module_from_spec(_spec)
+        _spec.loader.exec_module(_mod)
+        swarm_runs_root = _mod.swarm_runs_root
+    except Exception:
+        def swarm_runs_root() -> Path:
+            return _agent_root() / ".swarm" / "runs"
 
     cwd = Path.cwd().resolve()
     home = Path.home().resolve()
