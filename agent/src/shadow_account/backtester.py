@@ -219,6 +219,7 @@ def run_shadow_backtest(
     group_results: list[
         tuple[str, dict[str, dict[str, float]], dict[str, float], list[tuple[str, float]]]
     ] = []
+    degraded_pools: list[str] = []
     for currency, sub_selection in groups.items():
         codes = flatten_codes(sub_selection)
         group_run_dir = base_dir / currency
@@ -232,12 +233,16 @@ def run_shadow_backtest(
             initial_capital=initial_capital,
         )
         payload = json.loads(backtest_fn(str(group_run_dir)))
-        per_market, combined, curves = _summarize_artifacts(
+        per_market, combined, curves, group_reason = _summarize_artifacts(
             payload=payload, run_dir=group_run_dir, selection=sub_selection,
         )
+        if group_reason:
+            degraded_pools.append(f"{currency}: {group_reason}")
         group_results.append(
             (currency, per_market, combined, curves.get("combined") or []),
         )
+
+    degradation_reason = "; ".join(degraded_pools)
 
     headline = _headline_index(
         [(currency, combined) for currency, _, combined, _ in group_results],
@@ -281,6 +286,8 @@ def run_shadow_backtest(
         shadow_total_pnl=shadow_pnl,
         real_total_pnl=real_pnl,
         delta_pnl=round(shadow_pnl - real_pnl, 2),
+        status="degraded" if degradation_reason else "ok",
+        degradation_reason=degradation_reason,
     )
     _cache_result(base_dir, result)
     return result
@@ -315,6 +322,8 @@ def load_cached_result(shadow_id: str) -> ShadowBacktestResult | None:
         shadow_total_pnl=float(data.get("shadow_total_pnl", 0.0)),
         real_total_pnl=float(data.get("real_total_pnl", 0.0)),
         delta_pnl=float(data.get("delta_pnl", 0.0)),
+        status=str(data.get("status", "ok")),
+        degradation_reason=str(data.get("degradation_reason", "")),
     )
 
 
@@ -344,14 +353,21 @@ def _summarize_artifacts(
     payload: dict[str, Any],
     run_dir: Path,
     selection: dict[str, list[str]],
-) -> tuple[dict[str, dict[str, float]], dict[str, float], dict[str, list[tuple[str, float]]]]:
-    """Turn raw backtest output into (per_market, combined, equity_curves).
+) -> tuple[dict[str, dict[str, float]], dict[str, float], dict[str, list[tuple[str, float]]], str]:
+    """Turn raw backtest output into (per_market, combined, equity_curves, degradation_reason).
 
     Gracefully degrades when artifacts are missing (e.g. data fetch failed):
     returns empty dicts and a combined dict containing the error reason.
+
+    The fourth return value is "" when the simulation produced metrics, or a
+    short reason string when it did not run — callers use it to flag the
+    result as ``status="degraded"`` so users are not misled into thinking a
+    flat (shadow_pnl=0) result reflects the strategy rather than an engine
+    failure.
     """
     artifacts = payload.get("artifacts") or {}
     status = payload.get("status", "error")
+    degradation_reason = ""
 
     combined = _load_metrics(artifacts, run_dir)
     equity_points = _load_equity_curve(artifacts, run_dir)
@@ -361,11 +377,14 @@ def _summarize_artifacts(
     # warning (e.g. yfinance flaked on one market) — downgrading to ok is
     # more faithful to what the user actually has.
     if not combined and status != "ok":
-        combined = {"error": payload.get("stderr", "")[-200:] or "backtest failed"}
+        degradation_reason = (
+            payload.get("stderr", "")[-200:] or payload.get("error", "") or "backtest failed"
+        )
+        combined = {"error": degradation_reason}
 
     per_market = _per_market_breakdown(combined, selection)
     equity_curves = {"combined": equity_points} if equity_points else {}
-    return per_market, combined, equity_curves
+    return per_market, combined, equity_curves, degradation_reason
 
 
 def _load_metrics(artifacts: dict[str, str], run_dir: Path) -> dict[str, float]:

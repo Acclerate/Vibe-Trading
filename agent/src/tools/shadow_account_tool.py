@@ -232,6 +232,12 @@ class RunShadowBacktestTool(BaseTool):
             shadow_id=result.shadow_id,
             window=[window_start, window_end],
             markets=list(markets),
+            status=result.status,
+            # Make the degraded case unmissable to the LLM so it does not phrase
+            # a failed simulation as "完成". When status == "degraded" the
+            # market engine produced no metrics; shadow_total_pnl is 0 by
+            # construction and attribution is journal-only arithmetic.
+            degradation_reason=result.degradation_reason,
             per_market=result.per_market,
             combined=result.combined,
             shadow_total_pnl=result.shadow_total_pnl,

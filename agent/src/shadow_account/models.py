@@ -108,3 +108,12 @@ class ShadowBacktestResult:
     shadow_total_pnl: float
     real_total_pnl: float
     delta_pnl: float
+    # ``"ok"`` when the underlying market engine produced metrics, ``"degraded"``
+    # when the simulation could not run (e.g. data-source failure, subprocess
+    # crash) and shadow_total_pnl collapsed to 0 while attribution was still
+    # computed arithmetically from the journal. Downstream reporters should
+    # surface this so users do not mistake a degraded run for a flat strategy.
+    status: str = "ok"
+    # When status == "degraded", the short reason the simulation did not run
+    # (e.g. the trailing stderr from the backtest subprocess).
+    degradation_reason: str = ""
