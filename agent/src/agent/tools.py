@@ -12,7 +12,18 @@ from typing import Any, Dict, List, Optional
 
 class BaseTool(ABC):
     """Tool base class.
-
+        BaseTool (抽象基类)
+        ├── 类属性 ──── 工具的"身份证"
+        │   ├── name          → 唯一标识符
+        │   ├── description   → 给 LLM 看的自然语言描述
+        │   ├── parameters    → JSON Schema 格式的参数定义
+        │   ├── repeatable    → 是否可重复调用
+        │   └── is_readonly   → 是否只读（无副作用）
+            name: str = ""                    # 例如 "web_search"
+            description: str = ""             # 例如 "在互联网上搜索信息"
+            parameters: Dict[str, Any] = {}   # JSON Schema，定义入参
+            repeatable: bool = False          # 单轮对话中能否多次调用
+            is_readonly: bool = True          # 是否会修改外部状态
     Attributes:
         name: Unique tool identifier.
         description: Tool description shown to the LLM.
