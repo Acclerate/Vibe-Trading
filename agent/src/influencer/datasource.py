@@ -172,6 +172,11 @@ class XueqiuDataSource:
 
         Never raises for network/parse errors — they're logged and the
         affected fields stay NaN. Returns a metrics object regardless.
+
+        A uid that is a pending placeholder (starts with
+        ``PENDING_VERIFICATION``) is skipped with an all-NaN result and a
+        warning — it scores 0 and won't enter the pool, which is the safe
+        default for an unverified account.
         """
         metrics = InfluencerMetrics(uid=uid, fetched_at=int(time.time() * 1000))
         if not self._token:
@@ -182,10 +187,22 @@ class XueqiuDataSource:
             )
             return metrics
 
+        # Skip pending placeholders (unverified uids) — fetching a wrong
+        # numeric id would silently pollute the pool with a stranger's data.
+        from src.influencer.seeds import PENDING_PREFIX
+
+        if uid.startswith(PENDING_PREFIX):
+            logger.warning(
+                "skipping unverified seed uid=%s — resolve it in seeds.py "
+                "or via --add-seed before it can enter the pool",
+                uid,
+            )
+            return metrics
+
         deadline = time.monotonic() + self._budget_s
-        profile = self._safe(self._fetch_profile, uid, deadline, "profile")
-        timeline = self._safe(self._fetch_timeline, uid, deadline, "timeline")
-        cube_ids = self._safe(self._fetch_user_cube_ids, uid, deadline, "cube-list")
+        profile = self._safe(self._fetch_profile, uid, deadline=deadline, label="profile")
+        timeline = self._safe(self._fetch_timeline, uid, deadline=deadline, label="timeline")
+        cube_ids = self._safe(self._fetch_user_cube_ids, uid, deadline=deadline, label="cube-list")
 
         if profile:
             metrics.screen_name = str(profile.get("screen_name") or profile.get("name") or "")
@@ -251,13 +268,13 @@ class XueqiuDataSource:
             try:
                 import pysnowball  # type: ignore[import-not-found]
 
-                data = self._safe(lambda c=cid: pysnowball.cube.detail(c), cid, deadline, f"cube-detail/{cid}")
+                data = self._safe(lambda c=cid: pysnowball.cube.detail(c), deadline=deadline, label=f"cube-detail/{cid}")
                 if isinstance(data, dict):
                     return data.get("data") if "data" in data else data
             except ImportError:
                 pass
             # Direct fallback.
-            return self._safe(self._fetch_cube_detail_direct, cid, deadline, f"cube-detail-direct/{cid}")
+            return self._safe(self._fetch_cube_detail_direct, cid, deadline=deadline, label=f"cube-detail-direct/{cid}")
         return None
 
     def _fetch_cube_detail_direct(self, cube_id: str) -> Optional[dict]:

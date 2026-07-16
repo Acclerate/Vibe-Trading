@@ -1,0 +1,12 @@
+{
+  "_comment": "FALLBACK ONLY. The canonical source list is the influencer module's pool. Run `python -m src.influencer.export_sources --output ~/.snowball-follow/sources.json` to regenerate from the pool. These built-in defaults are used only when no config sources and no exported sources.json exist.",
+  "authors": [
+    { "name": "管我财", "slug": "9650668145", "tag": "港股投资达人" },
+    { "name": "大道无形我有型", "slug": "slowisquick", "tag": "价值投资理念" },
+    { "name": "刘成岗", "slug": "leoliu2000", "tag": "科技行业观察" },
+    { "name": "就叫姜诚", "slug": "2245748859", "tag": "基金投资专家" },
+    { "name": "陈达美股投资", "slug": "chenda", "tag": "美股投资达人" },
+    { "name": "小卡叔", "slug": "9508203182", "tag": "转债投资" },
+    { "name": "超级鹿鼎公", "slug": "8790885129", "tag": "投资策略分享" }
+  ]
+}
