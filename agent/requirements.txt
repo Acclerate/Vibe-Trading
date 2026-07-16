@@ -46,6 +46,8 @@ ccxt>=4.5.71
 aiohttp>=3.14.3
 cryptography>=50.0.0
 # optional: pip install "vibe-trading-ai[mt5]" — MetaTrader 5 terminal bridge (Windows only): forex/metals data + broker connector
+# Xueqiu influencer pool: token management + cube detail (大V watchlist)
+pysnowball>=0.1.8
 
 # REST API & SSE
 fastapi>=0.104.0
