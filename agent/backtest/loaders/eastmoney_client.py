@@ -81,6 +81,16 @@ def _min_interval() -> float:
 def get_json(url: str, *, params: dict[str, Any]) -> Any:
     """Issue a throttled Eastmoney GET and decode the body as JSON.
 
+    The URL is forced to plain HTTP for any ``*.eastmoney.com`` host: Eastmoney's
+    push2 / push2his / datacenter-web front-ends reject HTTPS clients by TLS
+    fingerprint (the connection is reset before a response), while the same
+    endpoints over plain HTTP are fully open and return byte-identical JSON.
+    Rewriting the scheme here — at the single Eastmoney entry point — lets every
+    Eastmoney-backed tool work in fingerprint-restricted networks without each
+    one having to know about the quirk. Safe: these are public, unauthenticated
+    market-data endpoints, so the lack of transport encryption does not weaken
+    any authentication the caller might assume.
+
     Args:
         url: Fully-qualified Eastmoney endpoint URL.
         params: Query parameters for the request.
@@ -94,6 +104,9 @@ def get_json(url: str, *, params: dict[str, Any]) -> Any:
         requests.HTTPError: Non-2xx response status.
         ValueError: Body is not valid JSON.
     """
+    lowered = url.lower()
+    if lowered.startswith("https://") and ".eastmoney.com/" in lowered:
+        url = "http://" + url[len("https://"):]
     return throttled_get_json(
         url,
         host_key=_HOST_KEY,
