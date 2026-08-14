@@ -132,7 +132,7 @@
     "label": "Zhipu",
     "api_key_env": "ZHIPU_API_KEY",
     "base_url_env": "ZHIPU_BASE_URL",
-    "default_model": "glm-5.1",
+    "default_model": "glm-5.3",
     "default_base_url": "https://open.bigmodel.cn/api/paas/v4",
     "api_key_required": true
   },
@@ -141,7 +141,7 @@
     "label": "GLM (Zhipu)",
     "api_key_env": "ZHIPU_API_KEY",
     "base_url_env": "ZHIPU_BASE_URL",
-    "default_model": "glm-5.1",
+    "default_model": "glm-5.3",
     "default_base_url": "https://open.bigmodel.cn/api/paas/v4",
     "api_key_required": true
   },
@@ -199,7 +199,7 @@
     "label": "Z.ai",
     "api_key_env": "ZAI_API_KEY",
     "base_url_env": "ZAI_BASE_URL",
-    "default_model": "glm-5.1",
+    "default_model": "glm-5.3",
     "default_base_url": "https://api.z.ai/api/coding/paas/v4",
     "api_key_required": true
   },

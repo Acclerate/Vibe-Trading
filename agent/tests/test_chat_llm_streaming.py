@@ -319,7 +319,7 @@ def test_generic_value_error_still_raises_provider_error() -> None:
     fake = _FakeStreamingLLM(exc=ValueError("malformed request payload"))
     with patch.dict(
         os.environ,
-        {"LANGCHAIN_PROVIDER": "zai", "LANGCHAIN_MODEL_NAME": "glm-5.1"},
+        {"LANGCHAIN_PROVIDER": "zai", "LANGCHAIN_MODEL_NAME": "glm-5.3"},
         clear=True,
     ):
         with pytest.raises(ProviderStreamError):
@@ -342,7 +342,7 @@ def test_provider_stream_error_hints_at_base_url_on_html_body() -> None:
     original = RuntimeError(
         '<!DOCTYPE html><html id="__next_error__">404 Not Found</html>'
     )
-    err = ProviderStreamError(provider="zai", model="glm-5.1", original=original)
+    err = ProviderStreamError(provider="zai", model="glm-5.3", original=original)
     message = str(err)
     assert "HTML page" in message
     assert "base URL" in message

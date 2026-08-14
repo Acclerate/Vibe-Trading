@@ -28,13 +28,13 @@ EXPECTED_PROVIDER_DEFAULTS = {
     "novita": "moonshotai/kimi-k3",
     "dashscope": "qwen-plus-latest",
     "qwen": "qwen-plus-latest",
-    "zhipu": "glm-5.1",
-    "glm": "glm-5.1",
+    "zhipu": "glm-5.3",
+    "glm": "glm-5.3",
     "moonshot": "kimi-k2.6",
     "minimax": "MiniMax-M3",
     "mimo": "MiMo-72B-A27B",
     "spark": "4.0Ultra",
-    "zai": "glm-5.1",
+    "zai": "glm-5.3",
     "modelscope": "Qwen/Qwen3.5-27B",
 }
 
@@ -147,23 +147,23 @@ def test_siliconflow_is_available_in_both_cli_onboarding_surfaces() -> None:
 
 def test_zai_base_url_falls_back_to_catalog_default(monkeypatch) -> None:
     """With no *_BASE_URL set, zai resolves to its catalog endpoint instead of
-    silently defaulting to api.openai.com (which 404s glm-5.1)."""
+    silently defaulting to api.openai.com (which 404s glm-5.3)."""
     for var in ("ZAI_BASE_URL", "OPENAI_BASE_URL", "OPENAI_API_BASE"):
         monkeypatch.delenv(var, raising=False)
-    creds = get_llm_credentials("zai", "glm-5.1")
+    creds = get_llm_credentials("zai", "glm-5.3")
     assert creds["base_url"] == "https://api.z.ai/api/coding/paas/v4"
 
 
 def test_explicit_provider_base_url_overrides_catalog_default(monkeypatch) -> None:
     monkeypatch.setenv("ZAI_BASE_URL", "https://custom.example/v1")
-    creds = get_llm_credentials("zai", "glm-5.1")
+    creds = get_llm_credentials("zai", "glm-5.3")
     assert creds["base_url"] == "https://custom.example/v1"
 
 
 def test_openai_base_url_env_overrides_catalog_default(monkeypatch) -> None:
     monkeypatch.delenv("ZAI_BASE_URL", raising=False)
     monkeypatch.setenv("OPENAI_BASE_URL", "https://proxy.example/v1")
-    creds = get_llm_credentials("zai", "glm-5.1")
+    creds = get_llm_credentials("zai", "glm-5.3")
     assert creds["base_url"] == "https://proxy.example/v1"
 
 
